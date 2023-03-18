@@ -5,10 +5,11 @@ import {
     createCreateMetadataAccountV2Instruction,
     createCreateMasterEditionV3Instruction, Key
 } from '@metaplex-foundation/mpl-token-metadata';
-import { bundlrStorage, mockStorage, findMetadataPda, toMetaplexFile, keypairIdentity, Metaplex, UploadMetadataInput } from '@metaplex-foundation/js';
+import { bundlrStorage, mockStorage, findMetadataPda, toMetaplexFile, keypairIdentity, Metaplex, UploadMetadataInput, toBigNumber } from '@metaplex-foundation/js';
 import { GetWalletData } from '../FileSystemWalletHandler';
 import * as  fs from 'fs';
 import { Buffer } from 'buffer'
+import { BigNumber } from "bignumber.js";
 
 
 
@@ -36,6 +37,7 @@ export async function mainfn(gameName: any, mintWalletAddress: any) {
     const mintWallet: any = await MintWalletKeyPair(gameName, mintWalletAddress, "Mint");
     console.log(mintWallet);
 
+
     const QUICKNODE_RPC = 'https://dry-sly-seed.solana-devnet.discover.quiknode.pro/1ab80a3ec0dad344ebb1db48f99421ce5bc4dd29/';
     const SOLANA_CONNECTION = new Connection(QUICKNODE_RPC);
 
@@ -46,7 +48,7 @@ export async function mainfn(gameName: any, mintWalletAddress: any) {
             providerUrl: QUICKNODE_RPC,
             timeout: 60000,
         }));
-
+    METAPLEX.use(mockStorage());
     const CONFIG = {
         uploadPath: 'uploads/',
         imgFileName: 'iMAGE.png',
@@ -69,6 +71,9 @@ export async function mainfn(gameName: any, mintWalletAddress: any) {
     //Step 2 - Upload Metadata
     const metadataUri = await uploadMetadata(imgUri, CONFIG.imgType, CONFIG.imgName, CONFIG.description, CONFIG.attributes, METAPLEX);
     console.log(`Metadata URI: ${metadataUri}`);
+
+    //Step 3 - Mint NFT
+    await mintNft(metadataUri, CONFIG.imgName, CONFIG.sellerFeeBasisPoints, CONFIG.symbol, CONFIG.creators, METAPLEX);
 }
 async function uploadImage(filePath: string, fileName: string, METAPLEX: any): Promise<string> {
     console.log(`Step 1 - Uploading Image`);
@@ -99,4 +104,21 @@ async function uploadMetadata(imgUri: string, imgType: string, nftName: string, 
         });
     console.log('   Metadata URI:', uri);
     return uri;
+}
+
+async function mintNft(metadataUri: string, name: string, sellerFee: number, symbol: string, creators: { address: PublicKey, share: number }[], METAPLEX: any) {
+    console.log(`Step 3 - Minting NFT`);
+    const { nft } = await METAPLEX
+        .nfts()
+        .create({
+            uri: metadataUri,
+            name: name,
+            sellerFeeBasisPoints: sellerFee,
+            symbol: symbol,
+            creators: creators,
+            isMutable: false,
+            maxSupply: toBigNumber(1)
+        });
+    console.log(`   Success!🎉`);
+    console.log(`   Minted NFT: https://explorer.solana.com/address/${nft.address}?cluster=devnet`);
 }
