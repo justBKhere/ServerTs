@@ -103,6 +103,7 @@
     "inflight": "^1.0.6",
     "inherits": "^2.0.4",
     "inquirer": "^8.2.5",
+    "ipfs-core": "^0.18.0",
     "is-fullwidth-code-point": "^3.0.0",
     "is-hex-prefixed": "^1.0.0",
     "is-interactive": "^1.0.0",
